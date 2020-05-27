@@ -1,0 +1,385 @@
+<html>
+	<head>
+		<style type="text/css">
+			body{
+				background-color: black;
+			}
+			td{
+				height: 50px;
+				width: 50px;
+				background-repeat:   no-repeat;
+				background-size:     cover;  
+				border: none;
+			}
+            .button{
+                color: yellow;
+                background-color: black;
+                border: none;
+                font-size: 50px;
+            }
+            .button:hover{
+                color: red;
+            }
+		</style>
+        
+		<script src="http://code.jquery.com/jquery-1.6.4.min.js" type="text/javascript"></script>
+        
+        <script>
+            var pacman = {
+                    "x": 10,  
+                    "y": 8,  
+                    "dir": 16,
+                };
+            var id = "#" + pacman.x +"-"+ pacman.y;	
+            
+            var ghost11 = {
+                "x": 8,
+                "y": 7,
+            }
+            var id2 = "#" + ghost11.x +"-"+ ghost11.y;	
+            
+            var ghost22 = {
+                "x": 8,
+                "y": 8,
+            }
+            var id3 = "#" + ghost22.x +"-"+ ghost22.y;
+            
+            var ghost33 = {
+                "x": 8,
+                "y": 9,
+            }
+            var id4 = "#" + ghost33.x +"-"+ ghost33.y;
+            
+            var wallsMatrix = [];
+            for(i = 0; i < 17; i++) {
+                wallsMatrix[i] = new Array(17);
+            }
+            
+            var dots = [];
+            for(i = 0; i < 17; i++) {
+                dots[i] = new Array(17);
+            }
+            
+            var flag = 0;
+            var score = 0;
+            var killable = false;
+            var timer = 0;
+            var dead = false;
+            var won = false;
+            
+            var ghostImage1 = 'url("assets/22.png")';
+            var ghostImage2 = 'url("assets/23.png")';
+            var ghostImage3 = 'url("assets/24.png")';
+            
+            var oldImage;
+            var oldImage2;
+            var oldImage3;
+
+            wallsMatrix[0] = [8, 1, 1, 1, 1, 1, 1, 1, 12, 1, 1, 1, 1, 1, 1, 1, 9];
+            wallsMatrix[1] = [2, 21, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 21, 2];
+            wallsMatrix[2] = [2, 0, 19, 0, 4, 1, 9, 0, 2, 0, 8, 1, 3, 0, 19, 0, 2];
+            wallsMatrix[3] = [2, 0, 0, 0, 0, 0, 6, 0, 6, 0, 6, 0, 0, 0, 0, 0, 2];
+            wallsMatrix[4] = [7, 1, 9, 0, 5, 0, 0, 0, 0, 0, 0, 0, 5, 0, 8, 1, 10];
+            wallsMatrix[5] = [20, 20, 2, 0, 17, 1, 1, 3, 0, 4, 1, 1, 18, 0, 2, 20, 20];
+            wallsMatrix[6] = [20, 20, 2, 0, 6, 0, 0, 0, 0, 0, 0, 0, 6, 0, 2, 20, 20];
+            wallsMatrix[7] = [1, 1, 10, 0, 0, 0, 8, 3, 20, 4, 9, 0, 0, 0, 7, 1, 1];
+            wallsMatrix[8] = [0, 0, 0, 0, 5, 0, 2, 20, 20, 20, 2, 0, 5, 0, 0, 0, 0];
+            wallsMatrix[9] = [1, 1, 9, 0, 6, 0, 7, 1, 1, 1, 10, 0, 6, 0, 8, 1, 1];
+            wallsMatrix[10]= [20, 20, 2, 0, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0, 2, 20, 20];
+            wallsMatrix[11]= [8, 1, 10, 0, 5, 0, 4, 12, 12, 12, 3, 0, 5, 0, 7, 1, 9];
+            wallsMatrix[12]= [2, 0, 0, 0, 2, 0, 0, 7, 11, 10, 0, 0, 2, 0, 0, 0, 2];
+            wallsMatrix[13]= [2, 0, 5, 0, 7, 3, 0, 0, 0, 0, 0, 4, 10, 0, 5, 0, 2];
+            wallsMatrix[14]= [2, 0, 6, 0, 0, 0, 0, 4, 1, 3, 0, 0, 0, 0, 6, 0, 2];
+            wallsMatrix[15]= [2, 21, 0, 0, 8, 9, 0, 0, 0, 0, 0, 8, 9, 0, 0, 21, 2];
+            wallsMatrix[16]= [7, 1, 1, 1, 11, 11, 1, 1, 1, 1, 1, 11, 11, 1, 1, 1, 10];
+            
+            dots[0] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,];
+            dots[1] = [0, 2, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 2, 0,];
+            dots[2] = [0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0,];
+            dots[3] = [0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0,];
+            dots[4] = [0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0,];
+            dots[5] = [0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0,];
+            dots[6] = [0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0,];
+            dots[7] = [0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0,];
+            dots[8] = [1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1,];
+            dots[9] = [0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0,];
+            dots[10]= [0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0,];
+            dots[11]= [0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0,];
+            dots[12]= [0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0,];
+            dots[13]= [0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 0, 1, 0,];
+            dots[14]= [0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 1, 0,];
+            dots[15]= [0, 2, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 2, 0,];
+            dots[16]= [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,];
+            
+            function init(){
+                var i, j;	
+                
+                for(i = 0; i < 17; i++) {
+                    for(j = 0; j < 17; j++){
+                        idWall = "#" + i +"-"+ j;
+                        $(idWall).css("background-image",'url("assets/' + wallsMatrix[i][j] + '.png")');
+                    }
+                }
+            }
+            
+            function menu(){
+                location.href=("./start.html");
+            }
+        </script>
+                
+        <script>
+            var data = {
+                "table": wallsMatrix,
+            }
+            
+            var ghost1 = new Worker("ghost.js");
+            
+            ghost1.postMessage(data);
+            
+            ghost1.onmessage = function(event){
+                $(id2).css("background-image", oldImage);
+                
+                ghost11 = event.data;
+                
+                id2 = "#" + ghost11.x +"-"+ ghost11.y;
+                
+                if (dots[ghost11.x][ghost11.y] == 0)
+                    oldImage = 'url("assets/20.png")'
+                else if (dots[ghost11.x][ghost11.y] == 1)
+                    oldImage = 'url("assets/0.png")'
+                else if (dots[ghost11.x][ghost11.y] == 2)
+                    oldImage = 'url("assets/21.png")'
+                
+				$(id2).css("background-image", ghostImage1);
+            }
+            
+            var ghost2 = new Worker("ghost2.js");
+            
+            ghost2.postMessage(data);
+            
+            ghost2.onmessage = function(event){
+                $(id3).css("background-image", oldImage2);
+                
+                ghost22 = event.data;
+                
+                id3 = "#" + ghost22.x +"-"+ ghost22.y;
+                
+                if (dots[ghost22.x][ghost22.y] == 0)
+                    oldImage2 = 'url("assets/20.png")'
+                else if (dots[ghost22.x][ghost22.y] == 1)
+                    oldImage2 = 'url("assets/0.png")'
+                else if (dots[ghost22.x][ghost22.y] == 2)
+                    oldImage2 = 'url("assets/21.png")'
+                
+				$(id3).css("background-image", ghostImage2);
+            }
+            
+            var ghost3 = new Worker("ghost3.js");
+            
+            ghost3.postMessage(data);
+            
+            ghost3.onmessage = function(event){
+                $(id4).css("background-image", oldImage3);
+                
+                ghost33 = event.data;
+                
+                id4 = "#" + ghost33.x +"-"+ ghost33.y;
+                
+                if (dots[ghost33.x][ghost33.y] == 0)
+                    oldImage3 = 'url("assets/20.png")'
+                else if (dots[ghost33.x][ghost33.y] == 1)
+                    oldImage3 = 'url("assets/0.png")'
+                else if (dots[ghost33.x][ghost33.y] == 2)
+                    oldImage3 = 'url("assets/21.png")'
+                
+				$(id4).css("background-image", ghostImage3);
+            }
+        </script>
+    </head>
+    <body>
+        <center>
+			<table>
+				<caption style="color: yellow; font-size:70px">Pac-Man</caption>
+				<script type="text/javascript">
+                    var i, j;
+                    var xDir = [0, 0, +1, -1];
+                    var yDir = [+1, -1, 0, 0];
+
+                    for(i = 0; i < 17; i++){
+                        document.write("<tr>");
+
+                        for(j = 0; j < 17; j++){
+                            document.write("<td style='background-color: black' id='"+ i +"-"+ j +"'>");
+                            document.write("</td>");
+                        }
+
+                        document.write("</tr>");
+                    }
+
+                    init();
+                    
+                    $(id).css("background-image",'url("assets/' + pacman.dir + '.png")');
+                    
+                    document.addEventListener("keydown", event => {
+                        //up
+                        if (event.keyCode == 38){
+                            pacman.dir = 16;
+                        }
+                        //down
+                        if (event.keyCode == 40){
+                            pacman.dir = 15;
+                        }	
+                        
+                        //left
+                        if (event.keyCode == 37){
+                            pacman.dir = 14;
+                        }
+                        //right
+                        if (event.keyCode == 39){
+                            pacman.dir = 13;
+                        }	
+				    });
+                    
+                    window.setInterval(movePlayer, 400);
+                    
+                    window.setInterval(killableTimer, 10);
+                    
+                    window.setInterval(collisionDet, 10);
+                    
+                    function collisionDet() {
+                        if(id == id2 && !killable){
+                            dead = true;
+                        }
+                        else if (id == id2 && killable){
+                            ghost1.terminate();
+                            id2 = 'dead';
+                        }
+                        
+                        if(id == id3 && !killable){
+                            dead = true;
+                        }
+                        else if (id == id3 && killable){
+                            ghost2.terminate();
+                            id3 = 'dead';
+                        }
+                        
+                        if(id == id4 && !killable){
+                            dead = true;
+                        }
+                        else if (id == id4 && killable){
+                            ghost3.terminate();
+                            id4 = 'dead';
+                        }
+                    }
+                    
+                    function killableTimer() {
+                        if(killable && timer > 0){
+                            ghostImage1 = 'url("assets/26.png")';
+                            ghostImage2 = 'url("assets/26.png")';
+                            ghostImage3 = 'url("assets/26.png")';
+                            timer--;
+                        }
+                        else {
+                            killable = false;
+                            ghostImage1 = 'url("assets/22.png")';
+                            ghostImage2 = 'url("assets/23.png")';
+                            ghostImage3 = 'url("assets/24.png")';
+                        }
+                    }
+
+                    function movePlayer() {
+                        var i, j;
+                        
+                        prevX = pacman.x + xDir[pacman.dir - 13];
+                        prevY = pacman.y + yDir[pacman.dir - 13];
+                        
+                        if((wallsMatrix[prevX][prevY] == 0 || wallsMatrix[prevX][prevY] == 20 || wallsMatrix[prevX][prevY] == 21) && !dead){
+                            if(wallsMatrix[prevX][prevY] == 21){
+                                killable = true;
+                                timer = 750;
+                                dots[prevX][prevY] = 0;
+                            }
+                            
+                            $(id).css("background-image",'url("assets/20.png")');
+
+                            pacman.x += xDir[pacman.dir - 13];
+                            pacman.y += yDir[pacman.dir - 13];
+                            id = "#" + pacman.x +"-"+ pacman.y;	
+                            
+                            wallsMatrix[pacman.x][pacman.y] = 20;
+                        }
+                        
+                        if(flag == 1 && !dead){
+                            dots[8][16] = 0;
+                            $(id).css("background-image",'url("assets/20.png")');
+
+                            pacman.x = 8;
+                            pacman.y = 16;
+                            id = "#" + pacman.x +"-"+ pacman.y;	
+                            
+                            wallsMatrix[pacman.x][pacman.y] = 20;
+                            
+                            flag = 0;
+                        }
+                        else if(flag == 2 && !dead){
+                            dots[8][0] = 0;
+                            $(id).css("background-image",'url("assets/20.png")');
+                            
+                            pacman.x = 8;
+                            pacman.y = 0;
+                            id = "#" + pacman.x +"-"+ pacman.y;	
+                            
+                            wallsMatrix[pacman.x][pacman.y] = 20;
+                            
+                            flag = 0;
+                        }
+                        
+                        if(pacman.x == 8 && pacman.y == 0 && pacman.dir == 14 && flag==0)
+                            flag = 1;
+                        else if(pacman.x == 8 && pacman.y == 16 && pacman.dir == 13 && flag==0)
+                            flag = 2;
+                        
+                        if(!dead)
+                            $(id).css("background-image",'url("assets/' + pacman.dir + '.png")');
+                        
+                        score = 0;
+                        for(i = 0; i < 17; i++){
+                            for(j = 0; j < 17; j++){
+                                if(wallsMatrix[i][j] == 0){
+                                    dots[i][j] = 1;
+                                    score++;
+                                }
+                                else if(wallsMatrix[i][j] == 21){
+                                    dots[i][j] = 2;
+                                }
+                                else{
+                                    dots[i][j] = 0;
+                                }
+                            }
+                        }
+                        
+                        if(dead){
+                            document.getElementById("end").innerHTML = "Game Over!";
+                            document.getElementById("end").style.color = "red";
+                        }
+                        else if(won){
+                            document.getElementById("end").innerHTML = "You Win!";
+                            document.getElementById("end").style.color = "green";
+                        }
+                        
+                        document.getElementById("scoreP").innerHTML = "Score: " + (123-score);
+                        
+                        if(score == 0 || (id2 == 'dead' && id3 == 'dead' && id4 == 'dead')){
+                            won = true;
+                        }
+                    }
+                </script>
+            </table>
+            
+            <p style="color: white; font-size: 50px;" id="scoreP"></p>
+            <p style="font-size: 50px;" id="end"></p>
+            
+            <button class="button" onclick="menu()">Menu</button>
+        </center>
+    </body>
+</html>
